@@ -6,7 +6,6 @@ import {
   Shirt,
   Watch,
   Search,
-  Star,
   ShoppingBag,
   ExternalLink,
   CheckCircle,
@@ -215,7 +214,7 @@ function parseGoogleSheetsCSV(csvText: string): Product[] {
 }
 
 export default function App() {
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<"home" | "giay" | "ao-so-mi" | "quan-au" | "phu-kien">("home");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -250,17 +249,7 @@ export default function App() {
         const sheetProducts = parseGoogleSheetsCSV(csvText);
         
         if (sheetProducts.length > 0) {
-          // Merge products: prepend new sheet products, remove static ones with the same name
-          const merged: Product[] = [...sheetProducts];
-          PRODUCTS.forEach(staticProd => {
-            const isDuplicate = sheetProducts.some(
-              sp => sp.name.toLowerCase() === staticProd.name.toLowerCase()
-            );
-            if (!isDuplicate) {
-              merged.push(staticProd);
-            }
-          });
-          setProducts(merged);
+          setProducts(sheetProducts);
         }
       } catch (error) {
         console.error("Lỗi đồng bộ dữ liệu Google Sheets:", error);
@@ -356,36 +345,7 @@ export default function App() {
 
   // Handpicked hot items for homepage highlights (at least 12 items)
   const featuredProducts = useMemo(() => {
-    const res: Product[] = [];
-    
-    // 1. Prioritize Google Sheets products at the front of the homepage highlights section
-    const sheetProds = products.filter(p => p.id.startsWith("gs-"));
-    sheetProds.forEach(p => res.push(p));
-
-    // 2. Add static featured items to fill up to at least 12 items
-    const shoesIds = ["sh-1", "sh-2", "sh-3"];
-    const shirtIds = ["cl-1", "cl-3", "cl-4"];
-    const trousersIds = ["cl-2", "cl-5", "cl-6"];
-    const accessoryIds = ["ac-1", "ac-2", "ac-3"];
-
-    const targetIds = [...shoesIds, ...shirtIds, ...trousersIds, ...accessoryIds];
-    targetIds.forEach(id => {
-      const p = products.find(x => x.id === id);
-      if (p && !res.some(existing => existing.name.toLowerCase() === p.name.toLowerCase())) {
-        res.push(p);
-      }
-    });
-
-    // 3. Fallback to fill up to 12 items from products list if still under 12
-    if (res.length < 12) {
-      products.forEach(p => {
-        if (res.length < 12 && !res.some(existing => existing.id === p.id)) {
-          res.push(p);
-        }
-      });
-    }
-
-    return res;
+    return products.slice(0, 12);
   }, [products]);
 
   return (
@@ -724,15 +684,7 @@ export default function App() {
 
                         <div className="p-4 flex-1 flex flex-col justify-between">
                           <div className="space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <div className="flex items-center gap-0.5 bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-md text-[10px] font-bold border border-amber-100">
-                                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                                <span>{product.rating}</span>
-                              </div>
-                              <span className="text-[11px] text-slate-400 font-bold">
-                                • Đã bán {product.soldCount.toLocaleString("vi-VN")}+
-                              </span>
-                            </div>
+
                             <h3 className="font-display font-bold text-slate-900 group-hover:text-[#EE4D2D] transition-colors text-sm line-clamp-1">
                               {product.name}
                             </h3>
@@ -929,7 +881,6 @@ export default function App() {
                   <option value="price-asc">Giá: Thấp đến Cao</option>
                   <option value="price-desc">Giá: Cao đến Thấp</option>
                   <option value="discount-desc">Giảm giá nhiều nhất (%)</option>
-                  <option value="rating">Đánh giá tốt nhất</option>
                 </select>
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 pointer-events-none" />
               </div>
@@ -953,7 +904,7 @@ export default function App() {
                     Sắp xếp: {
                       sortBy === "price-asc" ? "Giá tăng dần" :
                       sortBy === "price-desc" ? "Giá giảm dần" :
-                      sortBy === "discount-desc" ? "Giảm giá (%) lớn nhất" : "Đánh giá cao nhất"
+                      sortBy === "discount-desc" ? "Giảm giá (%) lớn nhất" : "Mặc định"
                     }
                     <button onClick={() => setSortBy("default")} className="text-slate-400 hover:text-slate-600">
                       <X className="w-3 h-3" />
@@ -1015,15 +966,7 @@ export default function App() {
                         {/* Text and prices */}
                         <div className="p-4 flex-1 flex flex-col justify-between">
                           <div className="space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <div className="flex items-center gap-0.5 bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded text-[10px] font-bold border border-amber-200/40">
-                                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                                <span>{product.rating}</span>
-                              </div>
-                              <span className="text-[11px] text-slate-400 font-semibold">
-                                • Đã bán {product.soldCount.toLocaleString("vi-VN")}+
-                              </span>
-                            </div>
+
                             <h3 className="font-display font-bold text-slate-900 group-hover:text-[#EE4D2D] transition-colors text-sm sm:text-base line-clamp-2 leading-snug">
                               {product.name}
                             </h3>
